@@ -120,7 +120,7 @@ class Mode:
                     self.buffers[-1].extend(prefs.insert_jump())
                     self.buffers[-1].append(f"{label}:")
 
-                if line[0] == "." and line[-1] == ":":
+                if line.startswith(".") and line.endswith(":"):
                     if random.random() < prefs.P_SPLIT:
                         self.buffers.append(collections.deque())
                         self.labels.append(line[:-1])
