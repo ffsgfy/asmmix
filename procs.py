@@ -59,18 +59,15 @@ class Mode:
             if pattern != -1:
                 function = line[pattern + len(self.PATTERN):]
                 if prefs.should_process(function):
-                    actions.append(Action.StackPush(Mode.WaitFunctionLabel(function)))
+                    actions.append(Action.StackPush(Mode.WaitFunctionLabel()))
 
             return actions
 
     class WaitFunctionLabel:
-        def __init__(self, function):
-            self.function = function
-
         def process(self, line):
             actions = [Action.Output((line,))]
 
-            if line.startswith(f"{self.function}:") or line.startswith(f"\"{self.function}\":"):
+            if line.startswith("Lfunc_begin"):
                 actions.append(Action.StackPop())
                 actions.append(Action.StackPush(Mode.SkipFunctionPrologue()))
 
@@ -78,7 +75,7 @@ class Mode:
 
     class SkipFunctionPrologue:
         def process(self, line):
-            if line[0].isspace():  # skip all lines that don't begin with a space/tab
+            if len(line) and line[0].isspace():  # skip all lines that don't begin with a space/tab
                 return [Action.StackPop(), Action.StackPush(Mode.ProcessFunction()), Action.Reprocess(line)]
             return [Action.Output((line,))]
 
@@ -104,10 +101,9 @@ class Mode:
                 self.buffers[1:-1] = buffers
 
         def process(self, line):
-            if line.endswith("# -- End function"):
+            if line.startswith("Lfunc_end"):
                 self.process_buffers()
-                buffer = []
-                buffer.extend(itertools.chain(*self.buffers))
+                buffer = list(itertools.chain(*self.buffers))
                 buffer.append(line)
                 return [Action.Output(buffer), Action.StackPop()]
             else:
